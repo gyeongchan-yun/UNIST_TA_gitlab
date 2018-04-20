@@ -1,7 +1,6 @@
 #!/bin/bash
 
 StudentFile=$1
-AssignmentFile=$2
 
 COURSEDIR=""
 
