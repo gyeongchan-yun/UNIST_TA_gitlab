@@ -150,9 +150,9 @@ class gitlab_manager:
         else:
             log(3, username + ' Not found')
 
-access_token = 'UrHFyLsbs9C_-cvBygPP'
-csv_path = "team_list.txt"
-group_name = "kjhyun_test2"
+access_token = ''
+csv_path = ''
+group_name = ''
 
 gg = gitlab_manager(access_token, csv_path, group_name)
 
