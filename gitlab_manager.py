@@ -28,7 +28,7 @@ class gitlab_manager:
     def create_allrepos(self):
         log(0, 'Create Gitlab Repositories')
 
-        self.create_projects()
+        #self.create_projects()
         self.join_members()
         self.check_members_in()
 
@@ -50,13 +50,30 @@ class gitlab_manager:
         log(1, 'Create Projects')
 
     def create_readme(self, project):
-        content = '2018 spring - ' + self.group_name 
+        content = self.group_name 
         commit_message = 'Initialize'
         project.files.create({'file_path': 'README.md', 'branch': 'master', 'content': content, 'commit_message': commit_message})
 
     def developer_auth(self, project, branch_name):
         branch = project.branches.get(branch_name)
         branch.protect(developers_can_push=True, developers_can_merge=True)
+
+    def deploy_keys(self):
+        log(0, 'Deploy Keys')
+
+        teams = open(self.file_path, 'r').readlines()
+
+        for team in teams:
+            project_name = '%s/%s' % (self.group_name, team[:-1])
+            print(project_name)
+            project = self.gl.projects.get(project_name)
+
+            key = project.keys.create({'title': 'YOUR_TITLE', 'key': open('YOUR_HOME/.ssh/id_rsa.pub').read()})
+            key.can_push = True
+            project.keys.enable(key.id)
+
+        log(1, 'Deploy Keys')
+
 
     def join_members(self):
         log(0, 'Join Members')
@@ -77,6 +94,12 @@ class gitlab_manager:
                     log(3, ('%s didn\'t join the project' % username))
                 else:
                     log(2, ('%s join the project' % username))
+
+                # This is for adding another TA to the repository as MASTER's access authorization
+                #if self.join_member(project, "TA_Username", access_lv=gitlab.MASTER_ACCESS) == False:
+                #    log(3, 'TA didn\'t join the project')
+                #else:
+                #    log(2, 'TA join the project')
 
         log(1, 'Join Members')
         
@@ -157,3 +180,4 @@ group_name = ''
 gg = gitlab_manager(access_token, csv_path, group_name)
 
 gg.create_allrepos()
+#gg.deploy_keys()
