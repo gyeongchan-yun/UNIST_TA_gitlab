@@ -28,8 +28,9 @@ class gitlab_manager:
     def create_allrepos(self):
         log(0, 'Create Gitlab Repositories')
 
-        #self.create_projects()
+        self.create_projects()
         self.join_members()
+        self.deploy_keys()
         self.check_members_in()
 
         log(1, 'Create Gitlab Repositories')
