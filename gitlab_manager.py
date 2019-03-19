@@ -1,5 +1,7 @@
 import gitlab
 import os 
+import re
+
 
 class bcolors:
     BLUE = '\033[94m'
@@ -18,12 +20,14 @@ pType = [start, done, success, error]
 def log(printType, content):
     print(pType[printType] + content)
 
-class gitlab_manager:
-    def __init__(self, access_token, file_path, group_name):
+
+class gitlabManager:
+    def __init__(self, access_token, group_name, file_path, readme_path):
         self.gl = gitlab.Gitlab('https://gitlab.com/', private_token=access_token)
         self.gl.auth()
-        self.file_path = file_path
         self.group_name = group_name
+        self.file_path = file_path
+        self.readme_path = readme_path
 
     def create_allrepos(self):
         log(0, 'Create Gitlab Repositories')
@@ -43,7 +47,8 @@ class gitlab_manager:
         group_id = self.gl.groups.list(search = self.group_name)[0].id
      
         for team in teams:
-            project_name= team[:-1]
+            team = self._remove_space(team)
+            project_name= team
             project = self.gl.projects.create({'name': project_name, 'namespace_id': group_id})
             self.create_readme(project)
             self.developer_auth(project, 'master')
@@ -51,8 +56,9 @@ class gitlab_manager:
         log(1, 'Create Projects')
 
     def create_readme(self, project):
-        content = self.group_name 
-        commit_message = 'Initialize'
+        with open(self.readme_path, 'r') as f:
+            content = f.read() 
+        commit_message = 'Initial Commit'
         project.files.create({'file_path': 'README.md', 'branch': 'master', 'content': content, 'commit_message': commit_message})
 
     def developer_auth(self, project, branch_name):
@@ -65,16 +71,25 @@ class gitlab_manager:
         teams = open(self.file_path, 'r').readlines()
 
         for team in teams:
-            project_name = '%s/%s' % (self.group_name, team[:-1])
+            team = self._remove_space(team)
+            project_name = '%s/%s' % (self.group_name, team)
             print(project_name)
             project = self.gl.projects.get(project_name)
-
-            key = project.keys.create({'title': 'YOUR_TITLE', 'key': open('YOUR_HOME/.ssh/id_rsa.pub').read()})
+            
+            home_path = self._get_home_path()
+            key = project.keys.create({'title': 'YOUR_TITLE', 'key': open(home_path + '/.ssh/id_rsa.pub').read()})
             key.can_push = True
             project.keys.enable(key.id)
 
         log(1, 'Deploy Keys')
 
+    def _remove_space(self, sentence):
+        space = re.compile(r'\s+')
+        sentence = re.sub(space, '', sentence)
+        return sentence
+
+    def _get_home_path(self):
+        return os.path.expanduser('~')
 
     def join_members(self):
         log(0, 'Join Members')
@@ -82,13 +97,15 @@ class gitlab_manager:
         teams = open(self.file_path, 'r').readlines()
 
         for team in teams:
-            students = team[:-1].split('_') 
+            team = self._remove_space(team)
+
+            students = team.split('_') 
 
             for username in students:
                 if self.isGitlabMember(username) == False:
                     return
 
-                project_name = '%s/%s' % (self.group_name, team[:-1])
+                project_name = '%s/%s' % (self.group_name, team)
                 project = self.gl.projects.get(project_name)
 
                 if self.join_member(project, username) == False:
@@ -126,25 +143,25 @@ class gitlab_manager:
 
         return True
 
-
     def check_members_in(self):
         log(0, 'Check Member In Project')
 
         teams = open(self.file_path, 'r').readlines()
 
         for team in teams:
-            students = team[:-1].split('_')
+            team = self._remove_space(team)
+            students = team.split('_')
 
             for username in students:
-                result = self.check_member_in(username, team[:-1])
+                result = self.check_member_in(username, team)
                 if result == 1:
-                    log(2, '%s is in %s' % (username, team[:-1])) 
+                    log(2, '%s is in %s' % (username, team)) 
                 elif result == 2:
-                    log(3, '%s is NOT in %s' % (username, team[:-1])) 
+                    log(3, '%s is NOT in %s' % (username, team)) 
                 elif result == 3:
-                    log(3, 'No one here in %s' % (team[:-1])) 
+                    log(3, 'No one here in %s' % (team)) 
                 elif result == 4:
-                    log(3, 'No project : %s' % (team[:-1])) 
+                    log(3, 'No project : %s' % (team)) 
 
         log(1, 'Check Member In Project')
         
@@ -175,10 +192,10 @@ class gitlab_manager:
             log(3, username + ' Not found')
 
 access_token = ''
-csv_path = ''
 group_name = ''
+student_list_path = ''
+readme_path = ''
 
-gg = gitlab_manager(access_token, csv_path, group_name)
+gitlab_manager = gitlabManager(access_token, group_name, student_list_path, readme_path)
 
-gg.create_allrepos()
-#gg.deploy_keys()
+gitlab_manager.create_allrepos()
