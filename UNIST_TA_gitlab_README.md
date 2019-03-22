@@ -9,6 +9,6 @@ UNIST TA gitlab
   - **things to write manually by project**
     - $group  # gitlab group (a course)
     - $students_dir  # directory of all student's projects
-    - $assignment  # assignment file
+    - $assignment  # assignment directory
 
 - pullSubmissions.sh
